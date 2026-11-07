@@ -7,6 +7,7 @@ import '../../models/catalog/catalog_item.dart';
 import '../../providers/multi_server_provider.dart';
 import '../../utils/title_match_candidates.dart';
 import '../data_aggregation_service.dart';
+import '../settings_service.dart';
 
 /// Matches external catalog items back to the user's libraries.
 ///
@@ -148,7 +149,8 @@ class CatalogLibraryMatcher {
       result: previous == null
           ? result
           : (
-              items: [for (final items in byServer.values) ...items]..sort(compareLibraryCopies),
+              items: [for (final items in byServer.values) ...items]
+                ..sort((a, b) => compareLibraryCopies(a, b, preference: SettingsService.readLibraryCopyPreference())),
               succeededServerIds: result.succeededServerIds,
               cancelledServerIds: result.cancelledServerIds,
               failedServerIds: result.failedServerIds,

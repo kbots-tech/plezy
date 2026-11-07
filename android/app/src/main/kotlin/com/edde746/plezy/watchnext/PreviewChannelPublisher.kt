@@ -32,6 +32,9 @@ internal class PreviewChannelPublisher(
     internal const val CHANNEL_NEW_RELEASES_MOVIES = "new_releases_movies"
     internal const val CHANNEL_NEW_RELEASES_TV = "new_releases_tv"
     internal const val CHANNEL_LIVE_TV = "live_tv"
+    /** Personal-home rails (kbots fork): Trakt based-on-watching + trending. */
+    internal const val CHANNEL_PERSONAL_BASED_ON_WATCHING = "personal_based_on_watching"
+    internal const val CHANNEL_PERSONAL_TRENDING = "personal_trending"
 
     /** Pre-split mixed rows — deleted when a split channel publishes. */
     private val LEGACY_CHANNELS = listOf("recently_added", "new_releases")
@@ -40,7 +43,9 @@ internal class PreviewChannelPublisher(
       CHANNEL_RECENTLY_ADDED_TV,
       CHANNEL_NEW_RELEASES_MOVIES,
       CHANNEL_NEW_RELEASES_TV,
-      CHANNEL_LIVE_TV
+      CHANNEL_LIVE_TV,
+      CHANNEL_PERSONAL_BASED_ON_WATCHING,
+      CHANNEL_PERSONAL_TRENDING
     )
     private val KNOWN_CHANNELS = ACTIVE_CHANNELS + LEGACY_CHANNELS
 

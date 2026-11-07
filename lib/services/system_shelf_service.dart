@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 import '../i18n/strings.g.dart';
+import '../media/catalog_item_ref.dart';
 import '../media/ids.dart';
 import '../media/media_hub.dart';
 import '../media/media_item.dart';
@@ -14,9 +15,11 @@ import '../media/media_server_client.dart';
 import '../models/livetv_channel.dart';
 import '../screens/video_player/live_tv_session_args.dart';
 import '../utils/app_logger.dart';
+import '../utils/external_ids.dart';
 import '../utils/platform_detector.dart';
 import 'deep_links/deep_link.dart';
 import 'jellyfin_client.dart';
+import 'personal_home/personal_home_feeds.dart';
 import 'plex_client.dart';
 import 'settings_service.dart' show EpisodePosterMode;
 import 'system_shelf_library_channels.dart';
@@ -321,6 +324,89 @@ class SystemShelfService {
     return result ?? false;
   }
 
+  /// Publish personal-home Preview Channels (Based on watching / Trending)
+  /// from Discover hubs that carry those keys. Catalog stand-ins deep-link
+  /// via `plezy://play?type=…&tmdb=…` so Projectivity taps reuse the shared
+  /// Jellyfin → Plex → request open path.
+  Future<bool> syncPersonalHomeChannels(
+    String profileId,
+    List<MediaHub> hubs,
+    MediaServerClient Function(ServerId serverId) getClientForServerId, {
+    required bool hideSpoilers,
+    required EpisodePosterMode episodePosterMode,
+  }) async {
+    if (_isTvosTarget) return false;
+    final channel = _channel;
+    if (channel == null || _activeOwner != profileId) return false;
+    final generation = _generation;
+
+    MediaHub? hubFor(String key) {
+      for (final hub in hubs) {
+        if (hub.id == key || hub.identifier == key) return hub;
+      }
+      return null;
+    }
+
+    final basedOn = hubFor(PersonalHomeChannelKeys.basedOnWatching);
+    final trending = hubFor(PersonalHomeChannelKeys.trending);
+    if (!_owns(profileId, generation)) return false;
+
+    final supported = await isSupported();
+    if (!_owns(profileId, generation) || !supported) return false;
+
+    Map<String, dynamic> toPayload(MediaItem item, int index) {
+      final payload = _convertToShelfItem(
+        item,
+        getClientForServerId,
+        hideSpoilers: hideSpoilers,
+        episodePosterMode: episodePosterMode,
+      );
+      payload['weight'] = SystemShelfLibraryChannels.maxItems - index;
+      final catalogIntent = _catalogPlayIntentUri(item);
+      if (catalogIntent != null) payload['intentUri'] = catalogIntent;
+      return payload;
+    }
+
+    Future<bool> syncRow({
+      required String key,
+      required String title,
+      required List<MediaItem> items,
+      required String label,
+    }) async {
+      if (!_owns(profileId, generation)) return false;
+      final capped = items.take(SystemShelfLibraryChannels.maxItems).toList(growable: false);
+      return await _invokeGuarded<bool>(
+            channel,
+            'syncChannel',
+            arguments: _envelope(profileId, generation, {
+              'channelKey': key,
+              'channelTitle': title,
+              'items': [for (var i = 0; i < capped.length; i++) toPayload(capped[i], i)],
+            }),
+            label: label,
+            severe: true,
+          ) ??
+          false;
+    }
+
+    final result = await _enqueueMutation<bool>(() async {
+      final okBasedOn = await syncRow(
+        key: PersonalHomeChannelKeys.basedOnWatching,
+        title: t.discover.personalBasedOnWatching,
+        items: basedOn?.items ?? const [],
+        label: 'Failed to sync Based on Watching preview channel',
+      );
+      final okTrending = await syncRow(
+        key: PersonalHomeChannelKeys.trending,
+        title: t.discover.personalTrending,
+        items: trending?.items ?? const [],
+        label: 'Failed to sync Trending preview channel',
+      );
+      return okBasedOn && okTrending;
+    });
+    return result ?? false;
+  }
+
   /// Publish a Live TV Preview Channel from the current channel list.
   ///
   /// Empty [channels] clears the row. Favorites (when supplied) sort first;
@@ -507,6 +593,19 @@ class SystemShelfService {
     return (ServerId(parts.first), parts.sublist(1).join('_'));
   }
 
+  /// `plezy://play?type=movie|show&tmdb=…` for catalog stand-ins; null otherwise.
+  String? _catalogPlayIntentUri(MediaItem item) {
+    if (!item.isCatalogItem) return null;
+    final catalog = item.catalogItem;
+    if (catalog == null) return null;
+    if (catalog.kind != MediaKind.movie && catalog.kind != MediaKind.show) return null;
+    final ids = ExternalIds(tmdb: catalog.ids.tmdb, tvdb: catalog.ids.tvdb, imdb: catalog.ids.imdb);
+    if (!ids.hasCatalogIds) return null;
+    return PlayLink(
+      target: CatalogPlayTarget(kind: catalog.kind, ids: ids),
+    ).toUri().toString();
+  }
+
   Map<String, dynamic> _convertToShelfItem(
     MediaItem item,
     MediaServerClient Function(ServerId serverId) getClientForServerId, {
@@ -517,7 +616,11 @@ class SystemShelfService {
 
     String? posterSourceUri;
     try {
-      if (item.serverId != null) {
+      // Catalog stand-ins already carry absolute poster URLs in thumbPath.
+      final thumb = item.thumbPath;
+      if (item.isCatalogItem && thumb != null && (thumb.startsWith('http://') || thumb.startsWith('https://'))) {
+        posterSourceUri = thumb;
+      } else if (item.serverId != null) {
         final client = getClientForServerId(ServerId(item.serverId!));
         String? thumbPath;
         if (_isTvosTarget) {

@@ -1,4 +1,5 @@
 import 'ids.dart';
+import 'library_copy_preference.dart';
 import 'media_item.dart';
 import 'media_version.dart';
 
@@ -52,12 +53,25 @@ int _bestResolutionHeight(MediaItem item) {
   return best;
 }
 
-/// Order the library copies of one title best-first: highest resolution, then
-/// library title, then server name, then global key.
+/// Order the library copies of one title best-first.
 ///
-/// Total and derived purely from the items, so a chooser can re-sort after
-/// merging a later resolution pass without its rows jumping around.
-int compareLibraryCopies(MediaItem a, MediaItem b) {
+/// With [LibraryCopyPreference.highestResolution] (upstream default shape):
+/// tallest version, then library title, then server name, then global key.
+///
+/// With [LibraryCopyPreference.jellyfin] / [LibraryCopyPreference.plex]:
+/// preferred backend first, then the same resolution/title/server/key ladder.
+///
+/// Total and derived purely from the items + [preference], so a chooser can
+/// re-sort after merging a later resolution pass without its rows jumping.
+int compareLibraryCopies(
+  MediaItem a,
+  MediaItem b, {
+  LibraryCopyPreference preference = LibraryCopyPreference.highestResolution,
+}) {
+  if (preference != LibraryCopyPreference.highestResolution) {
+    final byBackend = preference.backendRank(a.backend).compareTo(preference.backendRank(b.backend));
+    if (byBackend != 0) return byBackend;
+  }
   final byResolution = _bestResolutionHeight(b).compareTo(_bestResolutionHeight(a));
   if (byResolution != 0) return byResolution;
   final byLibrary = (a.libraryTitle ?? '').compareTo(b.libraryTitle ?? '');
@@ -65,6 +79,20 @@ int compareLibraryCopies(MediaItem a, MediaItem b) {
   final byServer = (a.serverName ?? '').compareTo(b.serverName ?? '');
   if (byServer != 0) return byServer;
   return a.globalKey.compareTo(b.globalKey);
+}
+
+/// First copy under [preference] after [compareLibraryCopies] order.
+MediaItem preferredLibraryCopy(
+  Iterable<MediaItem> copies, {
+  LibraryCopyPreference preference = LibraryCopyPreference.highestResolution,
+}) {
+  final list = [...copies];
+  if (list.isEmpty) {
+    throw ArgumentError.value(copies, 'copies', 'must not be empty');
+  }
+  if (list.length == 1) return list.first;
+  list.sort((a, b) => compareLibraryCopies(a, b, preference: preference));
+  return list.first;
 }
 
 /// The technical label of [copy]'s best version, e.g. "4K HEVC MKV
@@ -124,11 +152,15 @@ MediaItem mergeLibraryCopy(MediaItem existing, MediaItem addition) {
 /// behind these lists logs and skips per-server failures, so a later pass can
 /// legitimately come back short a server, or short the best-effort library
 /// stamp of a copy it did return.
-List<MediaItem> mergeLibraryCopies(Iterable<MediaItem> current, Iterable<MediaItem> additions) {
+List<MediaItem> mergeLibraryCopies(
+  Iterable<MediaItem> current,
+  Iterable<MediaItem> additions, {
+  LibraryCopyPreference preference = LibraryCopyPreference.highestResolution,
+}) {
   final byKey = <String, MediaItem>{for (final item in current) item.globalKey: item};
   for (final item in additions) {
     final existing = byKey[item.globalKey];
     byKey[item.globalKey] = existing == null ? item : mergeLibraryCopy(existing, item);
   }
-  return byKey.values.toList()..sort(compareLibraryCopies);
+  return byKey.values.toList()..sort((a, b) => compareLibraryCopies(a, b, preference: preference));
 }

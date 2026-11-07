@@ -1,5 +1,6 @@
 import 'dart:convert';
 import '../media/ids.dart';
+import '../media/library_copy_preference.dart';
 import '../media/playback_rate.dart';
 import '../media/video_zoom.dart';
 import '../media/media_version_preference.dart';
@@ -33,6 +34,7 @@ export 'base_shared_preferences_service.dart'
         EnumPref,
         NullableEnumPref,
         JsonPref;
+export '../media/library_copy_preference.dart';
 import '../models/audio_channel_limit.dart';
 import '../models/audio_quality_preset.dart';
 import '../models/transcode_quality_preset.dart';
@@ -1034,6 +1036,27 @@ class SettingsService extends BaseSharedPreferencesService {
     values: EpisodeAction.values,
     defaultValue: EpisodeAction.play,
   );
+
+  /// When several servers hold one title, which copy to prefer (personal home).
+  /// Default [LibraryCopyPreference.jellyfin] — local library first.
+  static const libraryCopyPreference = EnumPref<LibraryCopyPreference>(
+    'library_copy_preference',
+    values: LibraryCopyPreference.values,
+    defaultValue: LibraryCopyPreference.jellyfin,
+  );
+
+  /// Discover + Projectivity: Trakt-backed "Based on your watching" rail.
+  static const showPersonalBasedOnWatching = BoolPref('show_personal_based_on_watching', defaultValue: true);
+
+  /// Discover + Projectivity: Trakt trending rail (movies + shows mixed).
+  static const showPersonalTrending = BoolPref('show_personal_trending', defaultValue: true);
+
+  /// Publish personal rails as Android TV Preview Channels.
+  static const syncPersonalChannelsToLauncher = BoolPref('sync_personal_channels_to_launcher', defaultValue: true);
+
+  /// Discover shows only Continue Watching + personal rails + recently-added /
+  /// new-release style hubs (hides noisy multi-server hub soup).
+  static const discoverCuratedRowsOnly = BoolPref('discover_curated_rows_only', defaultValue: false);
   static const mpvConfigText = _MpvConfigTextPref();
 
   static final keyboardHotkeys = JsonPref<Map<String, HotKey?>>(
@@ -1142,6 +1165,11 @@ class SettingsService extends BaseSharedPreferencesService {
 
   /// Synchronous access to the singleton, or null if not yet initialized.
   static SettingsService? get instanceOrNull => _cachedInstance;
+
+  /// Personal-home library copy preference, falling back to Jellyfin-first
+  /// when settings are not yet loaded.
+  static LibraryCopyPreference readLibraryCopyPreference() =>
+      instanceOrNull?.read(libraryCopyPreference) ?? LibraryCopyPreference.jellyfin;
 
   /// Synchronous access to the bootstrapped singleton.
   static SettingsService get instance {
@@ -1584,6 +1612,7 @@ class SettingsService extends BaseSharedPreferencesService {
     episodePosterMode,
     continueWatchingAction,
     episodeAction,
+    libraryCopyPreference,
     keyboardHotkeys,
     // Library filters, one pair per tracker service.
     for (final s in TrackerService.values) ...[trackerFilterModePref(s), trackerFilterIdsPref(s)],
@@ -1599,6 +1628,10 @@ class SettingsService extends BaseSharedPreferencesService {
     useGlobalHubs,
     showServerNameOnHubs,
     groupLibrariesByServer,
+    showPersonalBasedOnWatching,
+    showPersonalTrending,
+    syncPersonalChannelsToLauncher,
+    discoverCuratedRowsOnly,
     rotationLocked,
     subAssOverride,
     subtitleRenderResolution,

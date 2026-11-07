@@ -19,6 +19,7 @@ import '../utils/media_server_http_client.dart';
 import '../utils/media_server_timeouts.dart';
 import 'local_playback_history.dart';
 import 'multi_server_manager.dart';
+import 'settings_service.dart';
 
 /// A row a successful response actually returned, paired with the immutable
 /// cache scope of the client that fetched it.
@@ -456,7 +457,8 @@ class DataAggregationService {
       if (members.length < 2) continue;
       final shown = _preferLocallyLastPlayed(members, lastPlayed);
       result[slot.key] = shown;
-      copies[shown.globalKey] = [...members]..sort(compareLibraryCopies);
+      final preference = SettingsService.readLibraryCopyPreference();
+      copies[shown.globalKey] = [...members]..sort((a, b) => compareLibraryCopies(a, b, preference: preference));
     }
     return (items: result, copies: copies);
   }
@@ -990,7 +992,7 @@ class DataAggregationService {
     );
     unqueriedServerIds.addAll(fetched.unqueriedServerIds);
     return (
-      items: mergeLibraryCopies(const [], fetched.items),
+      items: mergeLibraryCopies(const [], fetched.items, preference: SettingsService.readLibraryCopyPreference()),
       succeededServerIds: fetched.succeededServerIds,
       cancelledServerIds: fetched.cancelledServerIds,
       failedServerIds: fetched.failedServerIds,
@@ -1017,7 +1019,7 @@ class DataAggregationService {
       ),
     );
     return (
-      items: mergeLibraryCopies(const [], fetched.items),
+      items: mergeLibraryCopies(const [], fetched.items, preference: SettingsService.readLibraryCopyPreference()),
       succeededServerIds: fetched.succeededServerIds,
       cancelledServerIds: fetched.cancelledServerIds,
       failedServerIds: fetched.failedServerIds,

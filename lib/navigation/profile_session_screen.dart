@@ -248,6 +248,8 @@ class _ProfileSessionScreenState extends State<ProfileSessionScreen> {
                     // up — same playback-quiet policy as the resume gate.
                     isRefreshBlocked: () => VideoPlayerScreenState.activeGlobalKey != null,
                     profileId: activeId,
+                    // Personal-home rails (Based on watching / Trending).
+                    catalogSources: context.read<CatalogSourcesProvider>(),
                   );
                 },
               ),

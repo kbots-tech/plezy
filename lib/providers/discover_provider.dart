@@ -12,7 +12,9 @@ import '../mixins/event_aware.dart';
 import '../models/livetv_channel.dart';
 import '../services/settings_service.dart';
 import '../services/data_aggregation_service.dart';
+import '../services/personal_home/personal_home_feeds.dart';
 import '../services/system_shelf_service.dart';
+import 'catalog_sources_provider.dart';
 import '../utils/app_logger.dart';
 import '../utils/coalesced_load_coordinator.dart';
 import '../utils/deletion_notifier.dart';
@@ -100,13 +102,17 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
     this.libraryEventCooldown = const Duration(minutes: 2),
     Future<void> Function(String profileId, List<MediaItem>)? syncSystemShelf,
     Future<void> Function(String profileId, List<MediaServerClient> clients)? syncServerSources,
+    CatalogSourcesProvider? catalogSources,
+    PersonalHomeFeeds? personalFeeds,
     // A private field cannot be a named initializing formal callers can pass.
     // ignore: prefer_initializing_formals
   }) : _watchStateStore = watchStateStore,
        _now = now ?? DateTime.now,
        _isRefreshBlocked = isRefreshBlocked ?? _neverBlocked,
        _syncSystemShelfOverride = syncSystemShelf,
-       _syncServerSourcesOverride = syncServerSources {
+       _syncServerSourcesOverride = syncServerSources,
+       _personalFeeds =
+           personalFeeds ?? (catalogSources == null ? null : PersonalHomeFeeds.fromCatalogSources(catalogSources)) {
     _loadCoordinator = CoalescedLoadCoordinator<String>(onFull: _loadOnce, onDelta: _loadDeltaOnce);
     _libraryEventPacer = RefreshPacer(
       debounce: libraryEventDebounce,
@@ -144,6 +150,7 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   final MultiServerProvider _multiServer;
   final HiddenLibrariesProvider _hiddenLibraries;
   final LibrariesProvider _libraries;
+  final PersonalHomeFeeds? _personalFeeds;
 
   /// Injectable clock for the [staleAfter] check; tests advance it instead of
   /// sleeping — same seam as `ContentRefreshResumeGate`.
@@ -540,9 +547,10 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
 
       final filteredHubs = _filterDiscoverHubs(fetchedHubs.hubs);
       sortMediaHubsByLibraryOrder(filteredHubs, _libraries.libraries);
+      final withPersonal = await _withPersonalHomeHubs(filteredHubs);
 
-      appLogger.d('DiscoverProvider: ${_onDeck.length} on-deck items, ${filteredHubs.length} hubs');
-      _replaceHubs(filteredHubs);
+      appLogger.d('DiscoverProvider: ${_onDeck.length} on-deck items, ${withPersonal.length} hubs');
+      _replaceHubs(withPersonal);
       ++expectedCommitRevision;
       _hubsState = DiscoverLoadState.loaded;
       _loadedHubServerIds = _authoritativeSucceededServerIds(
@@ -721,17 +729,44 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
   }
 
   /// Playback-progress hubs duplicate the top Continue Watching row.
+  /// When curated-rows-only is on, keep personal + recently-added style hubs.
   List<MediaHub> _filterDiscoverHubs(List<MediaHub> hubs) {
+    final curatedOnly = SettingsService.instanceOrNull?.read(SettingsService.discoverCuratedRowsOnly) ?? false;
     return hubs.where((hub) {
       final hubId = hub.identifier?.toLowerCase() ?? '';
       final title = hub.title.toLowerCase();
-      return !hubId.contains('ondeck') &&
-          !hubId.contains('continue') &&
-          !hubId.contains('nextup') &&
-          !title.contains('continue watching') &&
-          !title.contains('on deck') &&
-          !title.contains('next up');
+      final dropped =
+          hubId.contains('ondeck') ||
+          hubId.contains('continue') ||
+          hubId.contains('nextup') ||
+          title.contains('continue watching') ||
+          title.contains('on deck') ||
+          title.contains('next up');
+      if (dropped) return false;
+      if (!curatedOnly) return true;
+      return isPersonalOrCuratedDiscoverHub(hub);
     }).toList();
+  }
+
+  /// Prepend personal-home rails (Based on watching / Trending) ahead of
+  /// server hubs so Discover and Projectivity share the same spine.
+  Future<List<MediaHub>> _withPersonalHomeHubs(List<MediaHub> serverHubs) async {
+    final feeds = _personalFeeds;
+    if (feeds == null) return serverHubs;
+    try {
+      final personal = await feeds.loadDiscoverHubs();
+      if (personal.isEmpty) return serverHubs;
+      // Drop any stale personal keys that a server somehow reused.
+      final personalIds = {for (final hub in personal) hub.id};
+      final rest = [
+        for (final hub in serverHubs)
+          if (!personalIds.contains(hub.id)) hub,
+      ];
+      return [...personal, ...rest];
+    } catch (e, stackTrace) {
+      appLogger.w('DiscoverProvider: personal home hubs failed', error: e, stackTrace: stackTrace);
+      return serverHubs;
+    }
   }
 
   Set<String> _authoritativeSucceededServerIds(
@@ -1115,6 +1150,15 @@ class DiscoverProvider extends ChangeNotifier with DisposableChangeNotifierMixin
         hideSpoilers: settings.read(SettingsService.hideSpoilers),
         episodePosterMode: settings.read(SettingsService.episodePosterMode),
       );
+      if (settings.read(SettingsService.syncPersonalChannelsToLauncher)) {
+        await SystemShelfService().syncPersonalHomeChannels(
+          owner,
+          hubs,
+          _clientForShelfItem,
+          hideSpoilers: settings.read(SettingsService.hideSpoilers),
+          episodePosterMode: settings.read(SettingsService.episodePosterMode),
+        );
+      }
     } catch (e) {
       appLogger.w('Failed to sync library preview channels', error: e);
     }

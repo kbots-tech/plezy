@@ -117,6 +117,31 @@ class AppearanceSettingsScreen extends StatelessWidget {
               ),
             _continueWatchingActionSelector(),
             _episodeActionSelector(),
+            _libraryCopyPreferenceSelector(),
+            SettingSwitchTile(
+              pref: SettingsService.showPersonalBasedOnWatching,
+              icon: Symbols.recommend_rounded,
+              title: t.settings.showPersonalBasedOnWatching,
+              subtitle: t.settings.showPersonalBasedOnWatchingDescription,
+            ),
+            SettingSwitchTile(
+              pref: SettingsService.showPersonalTrending,
+              icon: Symbols.trending_up_rounded,
+              title: t.settings.showPersonalTrending,
+              subtitle: t.settings.showPersonalTrendingDescription,
+            ),
+            SettingSwitchTile(
+              pref: SettingsService.syncPersonalChannelsToLauncher,
+              icon: Symbols.live_tv_rounded,
+              title: t.settings.syncPersonalChannelsToLauncher,
+              subtitle: t.settings.syncPersonalChannelsToLauncherDescription,
+            ),
+            SettingSwitchTile(
+              pref: SettingsService.discoverCuratedRowsOnly,
+              icon: Symbols.filter_alt_rounded,
+              title: t.settings.discoverCuratedRowsOnly,
+              subtitle: t.settings.discoverCuratedRowsOnlyDescription,
+            ),
             SettingSwitchTile(
               pref: SettingsService.useGlobalHubs,
               icon: Symbols.home_rounded,
@@ -327,6 +352,22 @@ class AppearanceSettingsScreen extends StatelessWidget {
     segments: [
       ButtonSegment(value: EpisodeAction.play, label: Text(t.settings.episodePlay)),
       ButtonSegment(value: EpisodeAction.details, label: Text(t.settings.episodeDetails)),
+    ],
+  );
+
+  Widget _libraryCopyPreferenceSelector() => SettingSelectionTile<LibraryCopyPreference>(
+    pref: SettingsService.libraryCopyPreference,
+    icon: Symbols.swap_horiz_rounded,
+    title: t.settings.libraryCopyPreference,
+    subtitleBuilder: (value) => switch (value) {
+      LibraryCopyPreference.jellyfin => t.settings.libraryCopyPreferJellyfin,
+      LibraryCopyPreference.plex => t.settings.libraryCopyPreferPlex,
+      LibraryCopyPreference.highestResolution => t.settings.libraryCopyPreferResolution,
+    },
+    options: [
+      DialogOption(value: LibraryCopyPreference.jellyfin, title: t.settings.libraryCopyPreferJellyfin),
+      DialogOption(value: LibraryCopyPreference.plex, title: t.settings.libraryCopyPreferPlex),
+      DialogOption(value: LibraryCopyPreference.highestResolution, title: t.settings.libraryCopyPreferResolution),
     ],
   );
 

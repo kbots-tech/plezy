@@ -632,6 +632,45 @@ class Translations$settings$en {
 	/// en: 'Open Details'
 	String get episodeDetails => 'Open Details';
 
+	/// en: 'When Both Have It, Prefer'
+	String get libraryCopyPreference => 'When Both Have It, Prefer';
+
+	/// en: 'Which library copy to open when Jellyfin and Plex both have the title'
+	String get libraryCopyPreferenceDescription => 'Which library copy to open when Jellyfin and Plex both have the title';
+
+	/// en: 'Jellyfin'
+	String get libraryCopyPreferJellyfin => 'Jellyfin';
+
+	/// en: 'Plex'
+	String get libraryCopyPreferPlex => 'Plex';
+
+	/// en: 'Highest resolution'
+	String get libraryCopyPreferResolution => 'Highest resolution';
+
+	/// en: 'Based on Your Watching'
+	String get showPersonalBasedOnWatching => 'Based on Your Watching';
+
+	/// en: 'Show a personalized Trakt rail on Discover and Projectivity'
+	String get showPersonalBasedOnWatchingDescription => 'Show a personalized Trakt rail on Discover and Projectivity';
+
+	/// en: 'Trending'
+	String get showPersonalTrending => 'Trending';
+
+	/// en: 'Show a Trakt trending rail on Discover and Projectivity'
+	String get showPersonalTrendingDescription => 'Show a Trakt trending rail on Discover and Projectivity';
+
+	/// en: 'Publish Personal Rails to Launcher'
+	String get syncPersonalChannelsToLauncher => 'Publish Personal Rails to Launcher';
+
+	/// en: 'Android TV Preview Channels for Based on Watching and Trending'
+	String get syncPersonalChannelsToLauncherDescription => 'Android TV Preview Channels for Based on Watching and Trending';
+
+	/// en: 'Curated Discover Rows Only'
+	String get discoverCuratedRowsOnly => 'Curated Discover Rows Only';
+
+	/// en: 'Hide noisy multi-server hubs; keep personal rails and recently added / new releases'
+	String get discoverCuratedRowsOnlyDescription => 'Hide noisy multi-server hubs; keep personal rails and recently added / new releases';
+
 	/// en: 'Use Home Layout'
 	String get useGlobalHubs => 'Use Home Layout';
 
@@ -3306,6 +3345,12 @@ class Translations$discover$en {
 
 	/// en: 'New Episodes'
 	String get previewChannelNewEpisodes => 'New Episodes';
+
+	/// en: 'Based on Your Watching'
+	String get personalBasedOnWatching => 'Based on Your Watching';
+
+	/// en: 'Trending'
+	String get personalTrending => 'Trending';
 
 	/// en: 'Latest Albums in ${library}'
 	String latestAlbumsIn({required Object library}) => 'Latest Albums in ${library}';
@@ -8337,6 +8382,19 @@ extension on Translations {
 			'settings.episodeAction' => 'Episode Action',
 			'settings.episodePlay' => 'Play',
 			'settings.episodeDetails' => 'Open Details',
+			'settings.libraryCopyPreference' => 'When Both Have It, Prefer',
+			'settings.libraryCopyPreferenceDescription' => 'Which library copy to open when Jellyfin and Plex both have the title',
+			'settings.libraryCopyPreferJellyfin' => 'Jellyfin',
+			'settings.libraryCopyPreferPlex' => 'Plex',
+			'settings.libraryCopyPreferResolution' => 'Highest resolution',
+			'settings.showPersonalBasedOnWatching' => 'Based on Your Watching',
+			'settings.showPersonalBasedOnWatchingDescription' => 'Show a personalized Trakt rail on Discover and Projectivity',
+			'settings.showPersonalTrending' => 'Trending',
+			'settings.showPersonalTrendingDescription' => 'Show a Trakt trending rail on Discover and Projectivity',
+			'settings.syncPersonalChannelsToLauncher' => 'Publish Personal Rails to Launcher',
+			'settings.syncPersonalChannelsToLauncherDescription' => 'Android TV Preview Channels for Based on Watching and Trending',
+			'settings.discoverCuratedRowsOnly' => 'Curated Discover Rows Only',
+			'settings.discoverCuratedRowsOnlyDescription' => 'Hide noisy multi-server hubs; keep personal rails and recently added / new releases',
 			'settings.useGlobalHubs' => 'Use Home Layout',
 			'settings.useGlobalHubsDescription' => 'Show unified home hubs. Otherwise use library recommendations.',
 			'settings.showServerNameOnHubs' => 'Show Server Name on Hubs',
@@ -8630,6 +8688,8 @@ extension on Translations {
 			'themeEditor.custom' => 'Custom',
 			'themeEditor.customEmpty' => 'Not created yet',
 			'themeEditor.editCustom' => 'Edit custom theme',
+			_ => null,
+		} ?? switch (path) {
 			'themeEditor.editCustomDescription' => 'Choose every color yourself',
 			'themeEditor.locked' => 'Unlock with Supporter',
 			'themeEditor.savedLocked' => 'Saved — unlocks with Supporter',
@@ -8643,8 +8703,6 @@ extension on Translations {
 			'themeEditor.slots.outline' => 'Outline',
 			'themeEditor.slots.text' => 'Text',
 			'themeEditor.slots.textMuted' => 'Secondary text',
-			_ => null,
-		} ?? switch (path) {
 			'themeEditor.slots.accent' => 'Accent',
 			'themeEditor.opacity' => 'Opacity',
 			'themeEditor.hexHint' => '#RRGGBB or #AARRGGBB',
@@ -9144,6 +9202,8 @@ extension on Translations {
 			'profiles.borrowEmpty' => 'Nothing to borrow yet.',
 			'profiles.borrowEmptySubtitle' => 'Connect Plex, Jellyfin, or Emby to another profile first.',
 			'profiles.borrowLoadFailed' => 'Available connections could not be loaded. Try again.',
+			_ => null,
+		} ?? switch (path) {
 			'profiles.borrowFromProfile' => ({required Object displayName}) => 'From ${displayName}',
 			'profiles.borrowConnectionBorrowed' => 'Connection borrowed.',
 			'profiles.borrowFailed' => 'Failed to borrow connection.',
@@ -9157,8 +9217,6 @@ extension on Translations {
 			'profiles.pinProtectionOptional' => 'PIN protection (optional)',
 			'profiles.pinExplain' => '4-digit PIN required to switch profiles.',
 			'profiles.continueButton' => 'Continue',
-			_ => null,
-		} ?? switch (path) {
 			'profiles.pinsDontMatch' => 'PINs don\'t match',
 			'profiles.tokenIdentityMismatch' => 'The Plex profile token resolved to an unexpected server',
 			'connections.sectionTitle' => 'Connections',
@@ -9243,6 +9301,8 @@ extension on Translations {
 			'discover.previewChannelRecentlyAddedTv' => 'Recently Added TV',
 			'discover.previewChannelNewMovies' => 'New Movies',
 			'discover.previewChannelNewEpisodes' => 'New Episodes',
+			'discover.personalBasedOnWatching' => 'Based on Your Watching',
+			'discover.personalTrending' => 'Trending',
 			'discover.latestAlbumsIn' => ({required Object library}) => 'Latest Albums in ${library}',
 			'discover.recentlyPlayedIn' => ({required Object library}) => 'Recently Played in ${library}',
 			'discover.mostPlayedIn' => ({required Object library}) => 'Most Played in ${library}',
@@ -9656,6 +9716,8 @@ extension on Translations {
 			'liveTv.cancelRecordingMessage' => ({required Object title}) => '${title} will no longer be recorded.',
 			'liveTv.deleteRule' => 'Delete rule',
 			'liveTv.deleteRuleTitle' => 'Delete recording rule?',
+			_ => null,
+		} ?? switch (path) {
 			'liveTv.deleteRuleMessage' => ({required Object title}) => 'Future episodes of ${title} will not be recorded.',
 			'liveTv.recordingScheduled' => 'Recording scheduled',
 			'liveTv.alreadyScheduled' => 'This program is already scheduled',
@@ -9671,8 +9733,6 @@ extension on Translations {
 			'liveTv.editRule' => 'Edit rule',
 			'liveTv.editRuleAction' => 'Edit',
 			'liveTv.recordingRuleUpdated' => 'Recording rule updated',
-			_ => null,
-		} ?? switch (path) {
 			'liveTv.guideReloadRequested' => 'Guide refresh requested',
 			'liveTv.guideReloadFailed' => 'Couldn\'t refresh the guide',
 			'liveTv.rulesProcessRequested' => 'Rule re-evaluation requested',
@@ -10170,6 +10230,8 @@ extension on Translations {
 			'performanceOverlay.sampleRate' => 'Sample Rate',
 			'performanceOverlay.pixelFormat' => 'Pixel Fmt',
 			'performanceOverlay.hwFormat' => 'HW Fmt',
+			_ => null,
+		} ?? switch (path) {
 			'performanceOverlay.matrix' => 'Matrix',
 			'performanceOverlay.primaries' => 'Primaries',
 			'performanceOverlay.transfer' => 'Transfer',
@@ -10185,8 +10247,6 @@ extension on Translations {
 			'performanceOverlay.maxCll' => 'MaxCLL',
 			'performanceOverlay.maxFall' => 'MaxFALL',
 			'performanceOverlay.cacheUsed' => 'Cache Used',
-			_ => null,
-		} ?? switch (path) {
 			'performanceOverlay.cacheLimit' => 'Cache Limit',
 			'performanceOverlay.speed' => 'Speed',
 			'performanceOverlay.player' => 'Player',

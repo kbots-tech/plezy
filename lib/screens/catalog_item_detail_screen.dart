@@ -34,6 +34,7 @@ import '../services/catalog/catalog_source.dart';
 import '../services/catalog/community_ratings.dart';
 import '../services/catalog/seerr_catalog_source.dart';
 import '../services/data_aggregation_service.dart';
+import '../services/settings_service.dart';
 import '../utils/app_logger.dart';
 import '../utils/catalog_navigation_helper.dart';
 import '../utils/desktop_window_padding.dart';
@@ -227,7 +228,11 @@ class _CatalogItemDetailScreenState extends State<CatalogItemDetailScreen> {
   void _mergeMatches(List<MediaItem> matches) {
     if (!mounted) return;
     final focused = _libraryMatchNodesByKey.values.firstWhereOrNull((node) => node.hasPrimaryFocus);
-    final merged = mergeLibraryCopies(_matches ?? const [], matches);
+    final merged = mergeLibraryCopies(
+      _matches ?? const [],
+      matches,
+      preference: SettingsService.readLibraryCopyPreference(),
+    );
     final keys = {for (final match in merged) match.globalKey};
     for (final key in _libraryMatchNodesByKey.keys.toList()) {
       if (!keys.contains(key)) _libraryMatchNodesByKey.remove(key)!.dispose();

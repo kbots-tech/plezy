@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plezy/media/ids.dart';
+import 'package:plezy/media/library_copy_preference.dart';
 import 'package:plezy/media/media_backend.dart';
 import 'package:plezy/media/media_item.dart';
 import 'package:plezy/media/media_item_merge.dart';
@@ -95,6 +96,30 @@ void main() {
     ]);
 
     expect(merged.map((item) => item.id), ['uhd', 'hd']);
+  });
+
+  test('jellyfin preference ranks jellyfin ahead of a higher-res plex copy', () {
+    final jellyfin = testMediaItem(
+      id: 'jf',
+      backend: MediaBackend.jellyfin,
+      serverId: 'jf-1',
+      serverName: 'Local',
+      libraryTitle: 'Movies',
+      mediaVersions: [MediaVersion(id: 'jf-v', videoResolution: '1080')],
+    );
+    final plex = testMediaItem(
+      id: 'px',
+      backend: MediaBackend.plex,
+      serverId: 'px-1',
+      serverName: 'Friend',
+      libraryTitle: '4K',
+      mediaVersions: [MediaVersion(id: 'px-v', videoResolution: '4k')],
+    );
+
+    final merged = mergeLibraryCopies(const [], [plex, jellyfin], preference: LibraryCopyPreference.jellyfin);
+
+    expect(merged.map((item) => item.id), ['jf', 'px']);
+    expect(preferredLibraryCopy([plex, jellyfin], preference: LibraryCopyPreference.jellyfin).id, 'jf');
   });
 
   test('keeps copies a later pass did not return', () {

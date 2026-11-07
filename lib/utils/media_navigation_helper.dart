@@ -217,12 +217,19 @@ Future<MediaNavigationResult> navigateToMediaItem(
 
   // One Continue Watching row can stand for several copies of a title; it
   // opens the one the viewer picks, under the row's own activation setting.
+  // Personal-home prefer-server auto-picks the best copy when set to
+  // Jellyfin/Plex; Highest resolution keeps the picker.
   if (playDirectly && !isOffline) {
     final copies = context.read<DiscoverProvider?>()?.continueWatchingCopiesOf(mi) ?? const <MediaItem>[];
     if (copies.length > 1) {
-      final picked = await _pickContinueWatchingCopy(context, copies);
-      if (picked == null || !context.mounted) return MediaNavigationResult.navigated;
-      mi = picked;
+      final preference = SettingsService.readLibraryCopyPreference();
+      if (preference.autoPicksBestCopy) {
+        mi = preferredLibraryCopy(copies, preference: preference);
+      } else {
+        final picked = await _pickContinueWatchingCopy(context, copies);
+        if (picked == null || !context.mounted) return MediaNavigationResult.navigated;
+        mi = picked;
+      }
     }
   }
 
